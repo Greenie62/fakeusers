@@ -13,6 +13,13 @@ const PORT = process.env.PORT || 3005;
 app.use(express.json())
 app.use(express.urlencoded({extended:true}))
 
+app.use((req,res,next)=>{
+    res.header("Access-Control-Allow-Origin","*")
+    res.header("Access-Control-Allow-Headers","origin, x-requested-with, Content-Type, Accept");
+    res.header("Access-Control-Allow-Methods","GET POST OPTIONS")
+    
+})
+
 app.get("/",(req,res)=>{
     // res.write("Welcome to Justins Fake users API")
     res.send(landingTemplate);
