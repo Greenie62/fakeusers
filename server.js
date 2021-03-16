@@ -1,9 +1,18 @@
 const express = require('express');
 const fs = require('fs');
-const path = require("path");
+// const path = require("path");
+const mongoose = require("mongoose");
+const db = require('./models')
 
 const landingTemplate = require("./landingtemplate.js")
 const addtemplate = require("./addtemplate.js")
+
+mongoose.connect("mongodb+srv://brat:booba@cluster0.lfuba.mongodb.net/fakeusersdb?retryWrites=true&w=majority",
+{useNewUrlParser: true, useUnifiedTopology: true },
+      (err)=>{
+    if(err)throw err;
+    console.log("mongo connected n running...")
+})
 
 
 const app = express();
@@ -25,27 +34,32 @@ app.get("/",(req,res)=>{
     res.send(landingTemplate);
 })
 
-app.get('/users',(req,res)=>{
-    fs.readFile("users.json",'utf8',(err,content)=>{
-        if(err)throw err;
-        res.end(content)
-    })
+app.get('/users',async(req,res)=>{
+    // fs.readFile("users.json",'utf8',(err,content)=>{
+    //     if(err)throw err;
+    //     res.end(content)
+    // })
+    let users = await db.User.find()
+    console.log(users)
+    res.json(users)
 })
 
 
-app.get('/users/:id',(req,res,next)=>{
-    if(isNaN(req.params.id))next()
-    fs.readFile("users.json",'utf8',(err,content)=>{
-        if(err)throw err;
-        console.log(content)
-        // res.end("temp")
-         let data = JSON.parse(content);
-        //     console.log(req.params.id)
-             console.log(data)
-         let user = data.filter(u=>u.id == req.params.id)[0];
-            console.log(user)
-            res.end(JSON.stringify(user))
-    })
+app.get('/users/:username',async (req,res,next)=>{
+    // if(isNaN(req.params.id))next()
+    // fs.readFile("users.json",'utf8',(err,content)=>{
+    //     if(err)throw err;
+    //     console.log(content)
+    //      let data = JSON.parse(content);
+    //          console.log(req.params.id)
+    //          console.log(data)
+    //      let user = data.filter(u=>u.id == req.params.id)[0];
+    //         console.log(user)
+    //         res.end(JSON.stringify(user))
+    // })
+
+    let user = await db.User.findOne({username:req.params.username})
+        res.json({user})
 })
 
 
@@ -54,7 +68,7 @@ app.get("/adduser",(req,res)=>{
 })
 
 
-app.post('/adduser',(req,res,next)=>{
+app.post('/adduser',async (req,res,next)=>{
     console.log(req.body);
     let isValid = true;
     for(let i in req.body){
@@ -64,21 +78,28 @@ app.post('/adduser',(req,res,next)=>{
         }
     }
     if(isValid){
-    fs.readFile("users.json",(err,content)=>{
-        if(err)throw err;
-        let data = JSON.parse(content);
-        let user = {id:data.length+1,...req.body}
-        console.log(user)
-        data.push(user);
-        fs.writeFile("users.json",JSON.stringify(data),(err)=>{
-            if(err)throw err;
-            console.log("file was updated")
-            res.send(`thank you! <a href=/users/${user.id}>See your entry!</a>`)
+        await db.User.create(req.body)
+        res.send('thank you!! <a href="/">Home</a>')
+    // fs.readFile("users.json",(err,content)=>{
+    //     if(err)throw err;
+    //     let data = JSON.parse(content);
+    //     let user = {id:data.length+1,...req.body}
+    //     console.log(user)
+    //     data.push(user);
+    //     fs.writeFile("users.json",JSON.stringify(data),(err)=>{
+    //         if(err)throw err;
+    //         console.log("file was updated")
+    //         res.send(`thank you! <a href=/users/${user.id}>See your entry!</a>`)
 
-        })
-    })
+    //     })
+    // })
 
 }
+})
+
+app.get("/populate",(req,res)=>{
+    populateDB();
+    res.end('cloudDB populated...we hope')
 })
 
 
@@ -89,6 +110,21 @@ function errorHandler(req,res,next){
     console.log("lousy urlPath");
     res.redirect('/');
 }
+
+let users = require("./users.json")
+console.log(users)
+
+function populateDB(){
+    users = users.map(u=>({...u,age:parseInt(u.age),balance:parseInt(u.balance)}))
+    console.log(users)
+    users.forEach(u=>{
+        db.User.create(u)
+        .then(dbuser=>{
+            console.log('user was created!')
+        })
+    })
+}
+
 
 
 
