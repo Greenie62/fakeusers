@@ -78,8 +78,8 @@ app.post('/adduser',async (req,res,next)=>{
         }
     }
     if(isValid){
-        await db.User.create(req.body)
-        res.send('thank you!! <a href="/">Home</a>')
+        let user = await db.User.create(req.body)
+        res.send(`thank you!!<a href=/users/new/${user._id}>See your user</a> <a href="/">Home</a>`)
     // fs.readFile("users.json",(err,content)=>{
     //     if(err)throw err;
     //     let data = JSON.parse(content);
@@ -100,6 +100,11 @@ app.post('/adduser',async (req,res,next)=>{
 app.get("/populate",(req,res)=>{
     populateDB();
     res.end('cloudDB populated...we hope')
+})
+
+
+app.get('/users/new/:id',async(req,res)=>{
+    res.json(await db.User.findOne({_id:req.params.id}))
 })
 
 
